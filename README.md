@@ -14,14 +14,13 @@
 
 ## TODO
 
-- 지도
-- 청크
-- 땅따먹기 시스템
-- 네더
+- map
+- chunk
+- system
+- nether
 - and more.........
 
-
-
+The end goal is to make it as similar as possible to the original.
 
 
 
