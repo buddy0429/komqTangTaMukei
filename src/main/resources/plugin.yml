@@ -1,0 +1,4 @@
+name: ChunkSteal
+version: '${version}'
+main: io.github.zirlak.chunksteal.ChunkSteal
+api-version: '1.20'
