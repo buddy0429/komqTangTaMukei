@@ -6,3 +6,7 @@ commands:
   buychunk:
     description: Buys a chunk
     usage: /<command>
+  normalaxe:
+    description: Gives you a normal axe
+  specialaxe:
+    description: Gives you a special axe

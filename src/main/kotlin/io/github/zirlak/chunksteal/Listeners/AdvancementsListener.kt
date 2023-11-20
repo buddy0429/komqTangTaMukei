@@ -1,5 +1,7 @@
 package io.github.zirlak.chunksteal.Listeners
 
+import io.github.zirlak.chunksteal.ChunkSteal
+import io.github.zirlak.chunksteal.Listeners.AdvancementsListener.PlayerStatus.playerStatus
 import me.croabeast.advancementinfo.AdvancementInfo
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.TextComponent
@@ -17,8 +19,19 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.plugin.Plugin
 
-class AdvancementsListener(private val plugin: Plugin) : Listener {
+class AdvancementsListener(private val plugin: ChunkSteal) : Listener {
 
+    object PlayerStatus {
+        val playerStatus = HashMap<String, Boolean>()
+
+        fun playerStatusReturn(): HashMap<String, Boolean> {
+            return playerStatus
+        }
+
+        fun playerStatusFalse(name: String) {
+            playerStatus[name] = false
+        }
+    }
     fun colorize(input: String): String {
         return ChatColor.translateAlternateColorCodes('&', input)
     }
@@ -86,6 +99,7 @@ class AdvancementsListener(private val plugin: Plugin) : Listener {
         val command1 = "/normalaxe 5" // 클릭하면 실행할 명령어 1
         val command2 = "/specialaxe 1" // 클릭하면 실행할 명령어 2
         val json = "[\"\",{\"text\":\"$message1\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"$command1\"}},{\"text\":\"$message2\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"$command2\"}}]" // 메시지를 JSON 형식으로 변환
+        playerStatus[player.name] = true
         Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "tellraw ${player.name} $json") // 콘솔에서 tellraw 명령어 실행
     }
 }
