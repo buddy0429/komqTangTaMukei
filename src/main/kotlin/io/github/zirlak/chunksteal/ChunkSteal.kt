@@ -6,6 +6,7 @@ import io.github.zirlak.chunksteal.Commands.SpecialAxeCommand
 import io.github.zirlak.chunksteal.Listeners.AdvancementsListener
 import io.github.zirlak.chunksteal.Listeners.ChunkGlassListener
 import io.github.zirlak.chunksteal.Listeners.ChunkListener
+import io.github.zirlak.chunksteal.Listeners.NetherPortalListener
 import org.bukkit.plugin.java.JavaPlugin
 import java.io.File
 import java.sql.Connection
@@ -22,6 +23,7 @@ class ChunkSteal : JavaPlugin() {
         server.pluginManager.registerEvents(AdvancementsListener(this), this)
         server.pluginManager.registerEvents(ChunkListener(this), this)
         server.pluginManager.registerEvents(ChunkGlassListener(this), this)
+        server.pluginManager.registerEvents(NetherPortalListener(), this)
         getCommand("buychunk")?.setExecutor(ChunkCommand(this))
         getCommand("normalaxe")?.setExecutor(NormalAxeCommand(this))
         getCommand("specialaxe")?.setExecutor(SpecialAxeCommand(this))

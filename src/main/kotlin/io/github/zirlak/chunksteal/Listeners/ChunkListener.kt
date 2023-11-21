@@ -110,11 +110,29 @@ class ChunkListener(private val plugin: ChunkSteal) : Listener {
     }
 
     private fun giveChunkToPlayer(player: Player, chunk: String) {
+        val currentWorld = player.world
+        // Get the corresponding world
+        val correspondingWorld = if (currentWorld.environment == World.Environment.NETHER) {
+            Bukkit.getWorld(currentWorld.name.replace("_nether", ""))
+        } else {
+            Bukkit.getWorld(currentWorld.name + "_nether")
+        }
+        // Get the corresponding chunk in the corresponding world
+        val correspondingChunk = correspondingWorld?.getChunkAt(player.location.chunk.x, player.location.chunk.z)?.chunkKey.toString()
+        // Insert the chunks into the database
         var statement: PreparedStatement? = null
         try {
+            // Insert the first chunk
             statement = plugin.connection!!.prepareStatement("INSERT INTO chunks (owner, chunk) VALUES (?, ?)")
             statement.setString(1, player.name)
             statement.setString(2, chunk)
+            statement.executeUpdate()
+            statement.close()
+
+            // Insert the corresponding chunk
+            statement = plugin.connection!!.prepareStatement("INSERT INTO chunks (owner, chunk) VALUES (?, ?)")
+            statement.setString(1, player.name)
+            statement.setString(2, correspondingChunk)
             statement.executeUpdate()
         } catch (e: SQLException) {
             // Handle the error

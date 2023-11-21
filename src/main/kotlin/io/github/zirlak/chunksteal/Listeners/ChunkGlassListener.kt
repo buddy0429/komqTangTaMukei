@@ -86,7 +86,7 @@ class ChunkGlassListener(private val plugin: ChunkSteal) : Listener {
                 playerDirections[player] = direction
             }
 
-            if (nearestDistance <= 2 && !isPlayerOwnerOfChunk(player, nearestChunk)) {
+            if (nearestDistance <= 3 && !isPlayerOwnerOfChunk(player, nearestChunk)) {
                 createGlassBorder(player, false, direction, nearestChunk)
             } else {
                 createGlassBorder(player, true, direction, nearestChunk)
@@ -169,7 +169,7 @@ class ChunkGlassListener(private val plugin: ChunkSteal) : Listener {
                         val existingBlockDisplay = world.getNearbyEntities(location, 0.5, 0.5, 0.5).any { entity ->
                             entity is BlockDisplay && entity.block.placementMaterial == Material.RED_STAINED_GLASS
                         }
-                        if (!existingBlockDisplay /*&& player.location.chunk != location.chunk*/) {
+                        if (!existingBlockDisplay && playerChunk != location.chunk) {
                             // Create a BlockDisplay with a red glass block at this location
                             val blockDisplay = world.spawnEntity(location, EntityType.BLOCK_DISPLAY) as BlockDisplay
                             blockDisplay.block = Bukkit.createBlockData(Material.RED_STAINED_GLASS)
