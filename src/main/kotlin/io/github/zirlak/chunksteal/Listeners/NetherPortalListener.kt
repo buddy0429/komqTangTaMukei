@@ -14,6 +14,12 @@ class NetherPortalListener : Listener {
             // Set the destination to the same coordinates in the other world
             event.to.x = event.from.x
             event.to.z = event.from.z
+
+            // Get the highest block at the destination coordinates
+            val highestBlockY = event.to.world.getHighestBlockYAt(event.to.blockX, event.to.blockZ)
+
+            // Set the y-coordinate to the highest block plus one to ensure the player is always on top of the highest block
+            event.to.y = highestBlockY.toDouble() + 1
         }
     }
 }

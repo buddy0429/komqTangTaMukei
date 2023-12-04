@@ -1,12 +1,10 @@
 package io.github.zirlak.chunksteal
 
+import io.github.zirlak.chunksteal.Commands.MapCommand
 import io.github.zirlak.chunksteal.Commands.ChunkCommand
 import io.github.zirlak.chunksteal.Commands.NormalAxeCommand
 import io.github.zirlak.chunksteal.Commands.SpecialAxeCommand
-import io.github.zirlak.chunksteal.Listeners.AdvancementsListener
-import io.github.zirlak.chunksteal.Listeners.ChunkGlassListener
-import io.github.zirlak.chunksteal.Listeners.ChunkListener
-import io.github.zirlak.chunksteal.Listeners.NetherPortalListener
+import io.github.zirlak.chunksteal.Listeners.*
 import org.bukkit.plugin.java.JavaPlugin
 import java.io.File
 import java.sql.Connection
@@ -27,6 +25,7 @@ class ChunkSteal : JavaPlugin() {
         getCommand("buychunk")?.setExecutor(ChunkCommand(this))
         getCommand("normalaxe")?.setExecutor(NormalAxeCommand(this))
         getCommand("specialaxe")?.setExecutor(SpecialAxeCommand(this))
+        getCommand("map")?.setExecutor(MapCommand(this))
 
         logger.info("ChunkSteal is enabled!")
     }

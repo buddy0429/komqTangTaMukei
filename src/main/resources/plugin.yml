@@ -10,3 +10,5 @@ commands:
     description: Gives you a normal axe
   specialaxe:
     description: Gives you a special axe
+  map:
+    description: Gives you a map

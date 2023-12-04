@@ -2,11 +2,11 @@ package io.github.zirlak.chunksteal.Listeners
 
 import com.google.common.primitives.Doubles.min
 import io.github.zirlak.chunksteal.ChunkSteal
+import io.github.zirlak.chunksteal.Commands.MapCommand
 import net.kyori.adventure.text.Component
 import org.bukkit.*
 import org.bukkit.Bukkit.broadcastMessage
 import org.bukkit.Bukkit.createBlockData
-import org.bukkit.craftbukkit.v1_20_R2.entity.CraftBlockDisplay
 import org.bukkit.entity.BlockDisplay
 import org.bukkit.entity.Entity
 import org.bukkit.entity.EntityType
@@ -23,6 +23,9 @@ import java.sql.PreparedStatement
 import org.bukkit.event.block.Action
 import java.sql.ResultSet
 import java.sql.SQLException
+import io.github.zirlak.chunksteal.Commands.MapCommand.MapUtils.updateMap
+import java.util.*
+import kotlin.collections.HashSet
 
 
 class ChunkListener(private val plugin: ChunkSteal) : Listener {
@@ -66,7 +69,7 @@ class ChunkListener(private val plugin: ChunkSteal) : Listener {
         if (event.action == Action.RIGHT_CLICK_AIR || event.action == Action.RIGHT_CLICK_BLOCK) {
             val clickedEntity = player.getTargetEntity(3.0)
             if (isSpecialItem(item) && isGlassBorder(clickedEntity)) {
-                val chunk = clickedEntity!!.location.chunk.chunkKey.toString()
+                val chunk = clickedEntity!!.location.chunk
                 player.inventory.removeItem(item)
                 giveChunkToPlayer(player, chunk)
             }
@@ -106,8 +109,102 @@ class ChunkListener(private val plugin: ChunkSteal) : Listener {
 
     private fun isGlassBorder(entity: Entity?): Boolean {
         // Check if the entity is a BlockDisplay with a red glass block
-        return entity is CraftBlockDisplay && entity.block.placementMaterial == Material.RED_STAINED_GLASS
+        return entity is BlockDisplay && entity.block.placementMaterial == Material.RED_STAINED_GLASS
     }
+
+    private fun giveChunkToPlayer(player: Player, chunk: Chunk) {
+        giveChunkToPlayer(player, chunk.chunkKey.toString())
+        claimSurroundedChunks(player, chunk)
+    }
+
+    private fun claimSurroundedChunks(player: Player, chunk: Chunk) {
+        val x = chunk.x
+        val z = chunk.z
+        val world = chunk.world
+        val playerChunks = HashSet<Chunk>()
+
+        for (i in -1..1) {
+            for (j in -1..1) {
+                if (i != 0 && j != 0) continue
+                val adjacent = world.getChunkAt(x + i, z + j)
+
+                val owner = findChunkOwner(adjacent.chunkKey.toString())
+                if (owner == player.name) {
+                    playerChunks.add(adjacent)
+                }
+            }
+        }
+
+        if (playerChunks.size >= 2 && isConnected(playerChunks)) {
+            broadcastMessage("§a${player.name}님이 땅을 차지했습니다!")
+
+            val surroundedChunks = getSurroundedChunks(playerChunks)
+            for (surroundedChunk in surroundedChunks) {
+                if (findChunkOwner(surroundedChunk.chunkKey.toString()) == null) {
+                    giveChunkToPlayer(player, surroundedChunk.chunkKey.toString())
+                }
+            }
+        }
+    }
+
+    private fun getSurroundedChunks(playerChunks: HashSet<Chunk>): HashSet<Chunk> {
+        val surroundedChunks = HashSet<Chunk>()
+
+        for (chunk in playerChunks) {
+            val x = chunk.x
+            val z = chunk.z
+            val world = chunk.world
+
+            for (i in -1..1) {
+                for (j in -1..1) {
+                    if (i == 0 && j == 0) continue
+                    if (i != 0 && j != 0) continue
+
+                    val surroundingChunk = world.getChunkAt(x + i, z + j)
+                    if (!playerChunks.contains(surroundingChunk)) {
+                        surroundedChunks.add(surroundingChunk)
+                    }
+                }
+            }
+        }
+
+        return surroundedChunks
+    }
+
+    private fun isConnected(playerChunks: HashSet<Chunk>): Boolean {
+        if (playerChunks.isEmpty()) return false
+
+        val start = playerChunks.first()
+        val queue = LinkedList<Chunk>()
+        val visited = HashSet<Chunk>()
+
+        queue.add(start)
+        visited.add(start)
+
+        while (queue.isNotEmpty()) {
+            val current = queue.poll()
+            val x = current.x
+            val z = current.z
+            val world = current.world
+
+            for (i in -1..1) {
+                for (j in -1..1) {
+                    if (i == 0 && j == 0) continue
+                    val adjacent = world.getChunkAt(x + i, z + j)
+
+                    if (playerChunks.contains(adjacent) && !visited.contains(adjacent)) {
+                        queue.add(adjacent)
+                        visited.add(adjacent)
+                    }
+                }
+            }
+        }
+
+        return visited.size == playerChunks.size
+    }
+
+
+
 
     private fun giveChunkToPlayer(player: Player, chunk: String) {
         val currentWorld = player.world
@@ -119,26 +216,30 @@ class ChunkListener(private val plugin: ChunkSteal) : Listener {
         }
         // Get the corresponding chunk in the corresponding world
         val correspondingChunk = correspondingWorld?.getChunkAt(player.location.chunk.x, player.location.chunk.z)?.chunkKey.toString()
-        // Insert the chunks into the database
-        var statement: PreparedStatement? = null
-        try {
-            // Insert the first chunk
-            statement = plugin.connection!!.prepareStatement("INSERT INTO chunks (owner, chunk) VALUES (?, ?)")
-            statement.setString(1, player.name)
-            statement.setString(2, chunk)
-            statement.executeUpdate()
-            statement.close()
 
-            // Insert the corresponding chunk
-            statement = plugin.connection!!.prepareStatement("INSERT INTO chunks (owner, chunk) VALUES (?, ?)")
-            statement.setString(1, player.name)
-            statement.setString(2, correspondingChunk)
-            statement.executeUpdate()
-        } catch (e: SQLException) {
-            // Handle the error
-        } finally {
-            // Close the statement and the connection
-            statement?.close()
-        }
+        // Insert the chunks into the database asynchronously
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, Runnable {
+            var statement: PreparedStatement? = null
+            try {
+                // Insert the first chunk
+                statement = plugin.connection!!.prepareStatement("INSERT INTO chunks (owner, chunk) VALUES (?, ?)")
+                statement.setString(1, player.name)
+                statement.setString(2, chunk)
+                statement.executeUpdate()
+                statement.close()
+
+                // Insert the corresponding chunk
+                statement = plugin.connection!!.prepareStatement("INSERT INTO chunks (owner, chunk) VALUES (?, ?)")
+                statement.setString(1, player.name)
+                statement.setString(2, correspondingChunk)
+                statement.executeUpdate()
+            } catch (e: SQLException) {
+                // Handle the error
+            } finally {
+                // Close the statement and the connection
+                statement?.close()
+            }
+            MapCommand.MapUtils.update(plugin)
+        })
     }
 }
