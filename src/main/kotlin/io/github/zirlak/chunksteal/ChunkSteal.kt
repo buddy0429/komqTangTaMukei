@@ -5,6 +5,7 @@ import io.github.zirlak.chunksteal.Commands.ChunkCommand
 import io.github.zirlak.chunksteal.Commands.NormalAxeCommand
 import io.github.zirlak.chunksteal.Commands.SpecialAxeCommand
 import io.github.zirlak.chunksteal.Listeners.*
+import org.bukkit.Bukkit
 import org.bukkit.plugin.java.JavaPlugin
 import java.io.File
 import java.sql.Connection
@@ -22,6 +23,7 @@ class ChunkSteal : JavaPlugin() {
         server.pluginManager.registerEvents(ChunkListener(this), this)
         server.pluginManager.registerEvents(ChunkGlassListener(this), this)
         server.pluginManager.registerEvents(NetherPortalListener(), this)
+        server.pluginManager.registerEvents(MapListener(), this)
         getCommand("buychunk")?.setExecutor(ChunkCommand(this))
         getCommand("normalaxe")?.setExecutor(NormalAxeCommand(this))
         getCommand("specialaxe")?.setExecutor(SpecialAxeCommand(this))
@@ -33,6 +35,7 @@ class ChunkSteal : JavaPlugin() {
     override fun onDisable() {
         // Plugin shutdown logic
         logger.info("ChunkSteal is disabled!")
+        Bukkit.getScheduler().cancelTasks(this)
     }
 
     private fun setupDatabase() {

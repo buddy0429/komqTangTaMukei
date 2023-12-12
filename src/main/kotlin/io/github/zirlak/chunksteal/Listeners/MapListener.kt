@@ -1,5 +1,7 @@
 package io.github.zirlak.chunksteal.Listeners
 
+import io.github.zirlak.chunksteal.ChunkSteal
+import io.github.zirlak.chunksteal.Commands.MapCommand.MapUtils.updatePlayer
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.entity.Player
@@ -17,6 +19,7 @@ class MapListener : Listener {
 
     @EventHandler
     fun onPlayerJoin(event: PlayerJoinEvent) {
+        updatePlayer(JavaPlugin.getPlugin(ChunkSteal::class.java))
 
     }
 

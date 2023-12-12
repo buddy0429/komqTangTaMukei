@@ -139,11 +139,11 @@ class ChunkGlassListener(private val plugin: ChunkSteal) : Listener {
             for (i2 in -1..1) {
                 for (i in -2..2) {
                     val location = getLocation(closetlocation, player, y, i, i2, direction)
+                    //need to fix location error
                     location.x = Math.round(location.x).toDouble()
                     location.y = Math.round(location.y).toDouble()
                     location.z = Math.round(location.z).toDouble()
                     if (remove) {
-                        // Remove any ArmorStands at this location
                         world.getNearbyEntities(location, 0.5, 0.5, 0.5).forEach { entity ->
                             if (entity is BlockDisplay) {
                                 entity.remove()

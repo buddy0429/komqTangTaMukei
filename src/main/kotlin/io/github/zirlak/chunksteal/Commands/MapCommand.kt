@@ -1,12 +1,9 @@
 package io.github.zirlak.chunksteal.Commands
 
 import io.github.zirlak.chunksteal.ChunkSteal
-import org.bukkit.Bukkit
+import org.bukkit.*
 import org.bukkit.Bukkit.broadcast
 import org.bukkit.Bukkit.broadcastMessage
-import org.bukkit.Chunk
-import org.bukkit.Material
-import org.bukkit.World
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
@@ -30,7 +27,7 @@ class MapCommand(private val plugin: ChunkSteal) : CommandExecutor {
                 meta.mapView = map
                 itemMap.itemMeta = meta
 
-                MapUtils.update(plugin)
+                MapUtils.updatePlayer(plugin)
 
                 // Give the map to the player
                 sender.inventory.addItem(itemMap)
@@ -40,7 +37,7 @@ class MapCommand(private val plugin: ChunkSteal) : CommandExecutor {
                 val world: World = sender.world
                 val map = Bukkit.createMap(world)
 
-                MapUtils.update(plugin)
+                MapUtils.updatePlayer(plugin)
 
                 // Create a map item stack with the map's id
                 val itemMap = ItemStack(Material.FILLED_MAP)
@@ -59,35 +56,77 @@ class MapCommand(private val plugin: ChunkSteal) : CommandExecutor {
 
     object MapUtils {
 
-        fun update(plugin: ChunkSteal) {
+        val playerAttributes = mapOf(
+            "name 1" to Pair(MapPalette.BLUE, MapCursor.Type.BLUE_POINTER),
+            "name 2" to Pair(MapPalette.LIGHT_GREEN, MapCursor.Type.GREEN_POINTER)
+            // Add more players here...
+        )
+
+        var map: MapView? = null
+        var ChunkCenterX = 0
+        var ChunkCenterZ = 0
+        var centerX = 0
+        var centerZ = 0
+        var renderer: MapRenderer? = null
+
+        fun updatePlayer(plugin: ChunkSteal) {
             for (player in Bukkit.getOnlinePlayers()) {
                 MapUtils.updateMap(player, plugin)
             }
         }
 
-        fun updateMap(player: Player, plugin: ChunkSteal) {
-            val playerAttributes = mapOf(
-                "your name" to Pair(MapPalette.BLUE, MapCursor.Type.BLUE_POINTER),
-                "your name 2" to Pair(MapPalette.LIGHT_GREEN, MapCursor.Type.GREEN_POINTER)
-                // Add more players here...
-            )
+        fun updateChunk(plugin: ChunkSteal) {
+            for (player in Bukkit.getOnlinePlayers()) {
+                MapUtils.updateChunkColor(player, plugin)
+            }
+        }
 
-            val map: MapView? = Bukkit.getMap(0) // Create a new map
+        fun updateChunkColor(player: Player, plugin: ChunkSteal) {
+
+            map = Bukkit.getMap(0) // Create a new map
             if (map != null) {
-                for (renderer in map.renderers) {
-                    map.removeRenderer(renderer)
+                renderer = object : MapRenderer() {
+                    override fun render(map: MapView, canvas: MapCanvas, player: Player) {
+                        // Render chunks owned by each player
+                        for ((playerName, attributes) in playerAttributes) {
+                            val ownedChunks = getAllChunksOwnedByPlayer(playerName, plugin)
+
+                            for (chunk in ownedChunks) {
+                                val chunkX = (chunk.x - ChunkCenterX) * 4 + 64
+                                val chunkZ = (chunk.z - ChunkCenterZ) * 4 + 64
+                                for (x in chunkX until chunkX + 4) {
+                                    for (z in chunkZ until chunkZ + 4) {
+                                        if (x in 0 until 128 && z in 0 until 128) {
+                                            canvas.setPixel(x, z, attributes.first)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-                map.isUnlimitedTracking = true
-                map.isTrackingPosition = true
-                val ChunkCenterX = player.location.chunk.x
-                val ChunkCenterZ = player.location.chunk.z
-                val centerX = player.location.chunk.getBlock(0, 0, 0).x
-                val centerZ = player.location.chunk.getBlock(0, 0, 0).z
-                map.centerX = centerX
-                map.centerZ = centerZ
+                map!!.addRenderer(renderer as MapRenderer)
+            }
+        }
+
+        fun updateMap(player: Player, plugin: ChunkSteal) {
+
+            map = Bukkit.getMap(0) // Create a new map
+            if (map != null) {
+                for (renderer in map!!.renderers) {
+                    map!!.removeRenderer(renderer)
+                }
+                map!!.isUnlimitedTracking = true
+                map!!.isTrackingPosition = true
+                ChunkCenterX = player.location.chunk.x
+                ChunkCenterZ = player.location.chunk.z
+                centerX = player.location.chunk.getBlock(0, 0, 0).x
+                centerZ = player.location.chunk.getBlock(0, 0, 0).z
+                map!!.centerX = centerX
+                map!!.centerZ = centerZ
 
                 // Create a custom renderer
-                val renderer = object : MapRenderer() {
+                renderer = object : MapRenderer() {
 
                     override fun render(map: MapView, canvas: MapCanvas, player: Player) {
                         val playerLocation = player.location
@@ -144,13 +183,13 @@ class MapCommand(private val plugin: ChunkSteal) : CommandExecutor {
                         canvas.cursors = cursors
                     }
                 }
-                map.addRenderer(renderer)
+                map!!.addRenderer(renderer as MapRenderer)
             }
         }
 // Call updateMap for all online players
 
 
-        private fun getAllChunksOwnedByPlayer(player: String, plugin: ChunkSteal): List<Chunk> {
+         fun getAllChunksOwnedByPlayer(player: String, plugin: ChunkSteal): List<Chunk> {
             val chunks = mutableListOf<Chunk>()
             var statement: PreparedStatement? = null
             var resultSet: ResultSet? = null
