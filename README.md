@@ -14,10 +14,7 @@
 
 ## TODO
 
-- map
-- chunk
 - system
-- nether
 - and more.........
 
 The end goal is to make it as similar as possible to the original.
